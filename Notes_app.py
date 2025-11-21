@@ -1,5 +1,9 @@
 import datetime
 import json
+import os
+import sys
+import time
+
 users = {}
 users_file = "users.json"
 
@@ -7,7 +11,7 @@ def load():
     global users
     try:
         with open(users_file, "r") as file:
-            accounts = json.load(file)
+            users = json.load(file)
     except FileNotFoundError:
         users = {}
 
@@ -18,55 +22,159 @@ def save():
         print("Note saved successfully.")
     except Exception as e:
         print(f"Error saving note: {e}")
-def load():
-    pass
+
+def register():
+    """docstrings"""
+
+    print('Register a new account')
+    while True:
+        username = input("Enter a username: ").strip().lower()
+        if not username:
+            print('Username field cannot be empty!')
+            continue
+        elif username not in users:
+            users[username] = {"name": "", 
+                               "password": "", 
+                               "notes": [], 
+                               "timestamps": []}
+        else:
+            print('Username already exists!')
+            continue
+        break
+    while True:
+        password = input("Enter a password (must be 8 char long): ").strip().lower()
+        if not password or len(password) < 8:
+            print('Password is not secure!')
+        else:
+            users[username]['password'] = password
+            break
+    while True:
+        name = input("Enter your name: ").strip().title()
+        if not name:
+            print('Name field cannot be empty!')
+            continue
+        else:
+            users[username]['name'] = name
+            save()
+            clear_screen()
+            sign_anim(text='\rAccount created successfully! Signing in')
+            main_block(username)
+            break
+            
+    
+def login():
+    """docstrings"""
+
+    print('Login to your account')
+    while True:
+        username = input('Enter your username: ').strip().lower()
+        if not username or username not in users:
+            print('Username not recognized.')
+            continue
+        else:
+            break
+        
+    while True:
+        password = input('Enter your password: ').strip().lower()
+        if not password or password != users[username]['password']:
+            print('Inaccurate password!')
+            continue
+        else:
+            clear_screen()
+            sign_anim(text='\rLogin successful! Redirecting to your notes')
+            main_block(username)
+            break
 
 
-
-
-
-
-
-
-def add():
+def add(username):
     note = input("Enter your note: ")
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    info = [timestamp, note]
-    save() 
-    pass
+    timestamp = datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S")
+    users[username]['notes'].append(note)
+    users[username]['timestamps'].append(timestamp)
+    save()
+    
 
-def view():
-    pass
+def view(username):
+    if not users[username]['notes']:
+        print("No notes found.")
+    else:
+        for i, (note, timestamp) in enumerate(zip(users[username]['notes'], users[username]['timestamps']), start=1):
+            print(f"{i}. {note} (Added on: {timestamp})")
+    
 
-def delete():
+def delete(username):
+    if not users[username]['notes']:
+        print("No notes found.")
+    else:
+        view(username)
+        while True:
+            input_ = input("Enter the note number to delete: ")
+            try:
+                note_index = int(input_) - 1
+                if 0 <= note_index < len(users[username]['notes']):
+                    deleted_note = users[username]['notes'].pop(note_index)
+                    users[username]['timestamps'].pop(note_index)
+                    save()
+                    print(f"Deleted note: {deleted_note}")
+                    break
+                else:
+                    print("Invalid note number.")
+                    continue
+            except ValueError:
+                print("Please enter a valid number.")
+                continue
 
-    pass
 
-def main_block():
-    print("""Welcome to the Notes App!""")
+def sign_anim(r=2, text='\rSigning in', sec=0.5):
+    """docstrings"""
+    for cycle in range(2):
+        for dots in range(1, 4):
+            sys.stdout.write(f'{text}{"." * dots}')
+            sys.stdout.flush()
+            time.sleep(sec)
+    
+def clear_screen():
+    """Clears the console screen depending on OS."""
+    os.system("cls" if os.name == "nt" else "clear")
+
+def main_block(username):
+    print(f"""Welcome {users[username]['name']}! """)
     print("1. Add a note")
     print("2. View notes")
     print("3. Delete a note")
-    ans = input("Please coose an option to continue: ")
-    if ans == "1":
-        add()
-    elif ans == "2":
-        view()
-    elif ans == "3":
-        delete()
+    print("4. Logout")
+    while True:
+        ans = input("Please choose an option to continue: ")
+        if ans == "1":
+            add(username)
+        elif ans == "2":
+            view(username)
+        elif ans == "3":
+            delete(username)
+        elif ans == "4":
+            clear_screen()
+            print("Logged out successfully.")
+            main()
+            break
+        else:
+            print("Invalid option. Please try again.")
+            continue
 
 def main():
     print("""Welcome to the Notes App!
           Please register or login to continue.""")
+    
+    print("1. Register")
+    print("2. Login")
+    print("3. Exit")
     while True:
-        print("1. Register")
-        print("2. Login")
-        print("3. Exit")
         ans = input("Please choose an option to continue: ")
         if ans == "1":
-            main_block()
+            register()
+            break
         elif ans == "2":
-            main_block()
+            login()
+            break
         elif ans == "3":
             print("Exiting the application. Goodbye!")
             break
@@ -75,6 +183,6 @@ def main():
             continue
 
     
-        
+load()
 if __name__ == "__main__":
     main()
